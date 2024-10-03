@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 spot_video.egg-info
 __pycache__/
+.venv
 
 # input
 data.zip

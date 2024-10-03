@@ -20,7 +20,7 @@ def download(file_id, data_dir="data"):
 def generate_label(data_dir="data"):
     labels = []
     video_meta_file = os.path.join(data_dir, "A_track/video_meta.txt")
-    with open(video_meta_file, "r") as f:
+    with open(video_meta_file, "r", encoding='utf8') as f:
         for line in f:
             words = line.strip().split()
             if len(words) == 0:
