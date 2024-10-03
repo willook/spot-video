@@ -33,7 +33,6 @@ class FeatureExtractor:
                 break
             if i_frame % key_frame_interval != 0:
                 continue
-            current_frame = cv2.GaussianBlur(current_frame, (5, 5), 1)
             diff_img = cv2.absdiff(prev_frame, current_frame)
             # 선형 배수가 아닐수도 있다
             # -> DTW로 해결할 수 있을 것 같다
