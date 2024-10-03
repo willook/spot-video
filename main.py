@@ -43,7 +43,7 @@ def main(args):
             origin_feature, origin_mask, distorted_features, distorted_masks = (
                 pickle.load(f)
             )
-    except:
+    except AssertionError:
         extractor = FeatureExtractor()
         origin_feature, origin_mask = extractor.extract(origin_video)
         distorted_features, distorted_masks = extractor.batch_extract(distorted_videos)

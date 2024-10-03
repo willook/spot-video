@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from spotvideo.util.video import next_frame
+from spotvideo.util.video import preprocess_frame
 
 
 class FeatureExtractor:
@@ -23,22 +23,24 @@ class FeatureExtractor:
         cap = cv2.VideoCapture(video_path)
         assert cap.isOpened(), f"Cannot open video file: {video_path}"
         feature = []
-        i_frame = 0
-        current_frame = next_frame(cap)
+        i_frame = 1
+        ret, frame = cap.read()
+        prev_frame = preprocess_frame(frame)
         while True:
-            prev_frame = current_frame
-            current_frame = next_frame(cap)
+            ret, frame = cap.read()
             i_frame += 1
-            if current_frame is None:
+            if not ret:
                 break
             if i_frame % key_frame_interval != 0:
                 continue
+            current_frame = preprocess_frame(frame)
             diff_img = cv2.absdiff(prev_frame, current_frame)
             # 선형 배수가 아닐수도 있다
             # -> DTW로 해결할 수 있을 것 같다
             # 요부분을 유사도로 사용해도 되겠다
             diff = np.mean(diff_img)
             feature.append(diff)
+            prev_frame = current_frame
 
         # normalize feature mean to 0, std to 1
         feature_np = np.array(feature)
