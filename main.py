@@ -1,206 +1,114 @@
 import os
-import json
+import pickle
 import time
 from pathlib import Path
+import argparse
 
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from skimage.filters import threshold_otsu
-
-
-def compare_frame_by_frame(origin_video_path, distorted_video_path, log_dir):
-    cap_origin = cv2.VideoCapture(origin_video_path)
-    cap_distorted = cv2.VideoCapture(distorted_video_path)
-    assert cap_origin.isOpened(), f"Cannot open video file: {origin_video_path}"
-    assert cap_distorted.isOpened(), f"Cannot open video file: {distorted_video_path}"
-    fps = cap_origin.get(cv2.CAP_PROP_FPS)
-
-    name1 = Path(origin_video_path).stem
-    name2 = Path(distorted_video_path).stem
-    filename = f"{name1}_{name2}.mp4"
-
-    writer = cv2.VideoWriter(
-        log_dir / filename,
-        cv2.VideoWriter_fourcc(*"mp4v"),
-        fps,
-        (int(cap_origin.get(3) + cap_distorted.get(3)), int(cap_origin.get(4))),
-    )
-
-    while True:
-        ret_origin, frame_origin = cap_origin.read()
-        ret_distorted, frame_distorted = cap_distorted.read()
-        if not ret_origin:
-            frame_origin = np.zeros_like(frame_distorted)
-        if not ret_distorted:
-            frame_distorted = np.zeros_like(frame_origin)
-        if not ret_origin and not ret_distorted:
-            break
-        merged = np.hstack((frame_origin, frame_distorted))
-        writer.write(merged)
-    writer.release()
-    print(f"{filename} saved")
+from spotvideo.preprocess.signal import FeatureExtractor
+from spotvideo.util.draw import save_plot, save_similarity_histogram
+from spotvideo.model.similarity import SimilarityClassifier
+from spotvideo.util.metric import accuracy, f1_score
 
 
-def compare_feature(
-    origin_feature, distorted_feature, origin_mask=None, distorted_mask=None
-):
-    # TODO: cross-correlation shift 대처
-    # find shift between two features
-    # best_shift = np.argmax(correlation) - (len(x) - 1)
-    # print("Best shift:", best_shift)
-    video_length = min(len(origin_feature), len(distorted_feature))
-    origin_feature = origin_feature[:video_length]
-    distorted_feature = distorted_feature[:video_length]
-    origin_mask = origin_mask[:video_length] if origin_mask is not None else None
-    distorted_mask = (
-        distorted_mask[:video_length] if distorted_mask is not None else None
-    )
-
-    if origin_mask is not None and distorted_mask is not None:
-        mask = origin_mask & distorted_mask
-    elif origin_mask is not None:
-        mask = origin_mask
-    elif distorted_mask is not None:
-        mask = distorted_mask
-    else:
-        mask = np.ones(video_length, dtype=bool)
-
-    origin_masked = origin_feature * mask
-    distorted_masked = distorted_feature * mask
-    similarity = np.dot(origin_masked, distorted_masked) / (
-        np.linalg.norm(origin_masked) * np.linalg.norm(distorted_masked)
-    )
-    return similarity
-
-
-def predict_score(origin_video_dir, distorted_video_dir):
-    origin_video_feature = None
-    for video_name in os.listdir(origin_video_dir):
-        origin_video_path = os.path.join(origin_video_dir, video_name)
-        origin_video_feature, origin_mask = extract_feature(origin_video_path)
-        plt.figure()
-        plt.plot(origin_video_feature, label="origin")
-        plt.savefig(log_dir / "origin_feature.png")
-        plt.close()
-
-    scores = []
-    video_names = []
-    # sort by int(stem)
-    distorted_video_names = sorted(
-        os.listdir(distorted_video_dir), key=lambda x: int(Path(x).stem)
-    )
-    # for video_name in tqdm(os.listdir(distorted_video_dir)):
-    for video_name in distorted_video_names:
-        distorted_video_path = os.path.join(distorted_video_dir, video_name)
-        distorted_video_feature, distorted_mask = extract_feature(distorted_video_path)
-        plt.figure()
-        file_name = Path(distorted_video_path).stem
-        plt.plot(distorted_video_feature, label=f"distorted_{file_name}")
-        plt.savefig(log_dir / f"distorted_feature_{file_name}.png")
-        plt.close()
-
-        score = compare_feature(
-            origin_video_feature, distorted_video_feature, origin_mask, distorted_mask
+def get_distorted_videos(distorted_dir):
+    return [
+        os.path.join(distorted_dir, video_name)
+        for video_name in sorted(
+            os.listdir(distorted_dir), key=lambda x: int(Path(x).stem)
         )
-        print(f"{video_name}: {score}")
-        scores.append(score)
-        video_names.append(video_name)
-
-    return np.array(scores)
+    ]
 
 
-def f1_score(y_true, y_pred):
-    tp = sum([1 for x, y in zip(y_true, y_pred) if x == y and x == 1])
-    fp = sum([1 for x, y in zip(y_true, y_pred) if x != y and x == 0])
-    fn = sum([1 for x, y in zip(y_true, y_pred) if x != y and x == 1])
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    f1 = 2 * precision * recall / (precision + recall)
-    return f1
+def main(args):
+    origin_dir = args.origin_dir
+    distorted_dir = args.distorted_dir
+    label_file = args.label_file
+    log_dir = Path(args.log_dir)
 
+    assert os.path.isdir(origin_dir), f"Cannot find directory: {origin_dir}"
+    assert os.path.isdir(distorted_dir), f"Cannot find directory: {distorted_dir}"
+    assert os.path.isfile(label_file), f"Cannot find file: {label_file}"
 
-def accuracy(y_true, y_pred):
-    return sum([1 for x, y in zip(y_true, y_pred) if x == y]) / len(y_true)
+    start = time.time()
 
+    # find target videos
+    origin_video = os.path.join(origin_dir, os.listdir(origin_dir)[0])
+    distorted_videos = get_distorted_videos(distorted_dir)
 
-origin_video_dir = "data/A_track/original/"
-distorted_video_dir = "data/A_track/distorted/"
-label_file = "data/A_track/label.txt"
-log_dir = Path("log_dir")
-log_dir.mkdir(exist_ok=True)
-threshold = 0.9
+    # extract features or load from cache if use_cache is True
+    try:
+        cache_file = log_dir / "cache_feature.pickle"
+        assert args.use_cache and cache_file.exists()
+        with open(cache_file, "rb") as f:
+            origin_feature, origin_mask, distorted_features, distorted_masks = (
+                pickle.load(f)
+            )
+    except:
+        extractor = FeatureExtractor()
+        origin_feature, origin_mask = extractor.extract(origin_video)
+        distorted_features, distorted_masks = extractor.batch_extract(distorted_videos)
+        with open(cache_file, "wb") as f:
+            pickle.dump(
+                (origin_feature, origin_mask, distorted_features, distorted_masks), f
+            )
 
-compare_frame_by_frame(
-    "data/A_track/original/Falling Hare (1943).mpeg",
-    "data/A_track/distorted/15.mpeg",
-    log_dir,
-)
-use_cache = False
+    # predict labels based on similarity
+    classifier = SimilarityClassifier()
+    predicted_labels, info = classifier.predict(
+        origin_feature, distorted_features, origin_mask, distorted_masks
+    )
+    threshold = info["threshold"]
+    similarities = info["similarities"]
 
-start = time.time()
-try:
-    cache_file = log_dir / "scores.json"
-    assert use_cache and cache_file.exists()
-    scores_json = json.load(open(cache_file))
-    scores = np.array(scores_json)
-except:
-    scores = predict_score(origin_video_dir, distorted_video_dir)
-    json.dump(scores.tolist(), open(cache_file, "w"))
+    end = time.time()
+    elapsed = end - start
 
+    # evaluate
+    labels = [int(line.strip()) for line in open(label_file)]
+    acc = accuracy(labels, predicted_labels)
+    f1 = f1_score(labels, predicted_labels)
 
-# 히스토그램과 임계값 표시
-threshold = threshold_otsu(scores)
-
-# label and predicted label
-with open(label_file, "r") as f:
-    labels = [int(line.strip()) for line in f]
-predicted_labels = [1 if scores > threshold else 0 for scores in scores]
-
-end = time.time()
-
-# print result
-for i, (label, predicted_label, score) in enumerate(
-    zip(labels, predicted_labels, scores)
-):
-    if label == predicted_label:
-        print(f"video {i+1}: label {label}, predicted {predicted_label}, score {score}")
-    else:
+    # print and save results
+    for i, (label, predicted_label, similarity) in enumerate(
+        zip(labels, predicted_labels, similarities)
+    ):
+        if label == predicted_label:
+            continue
         print(
-            f"    video {i+1}: label {label}, predicted {predicted_label}, score {score}"
+            f"[{i+1}] label {label}, predicted {predicted_label}, similarity {similarity}"
         )
 
-acc = accuracy(labels, predicted_labels)
-f1 = f1_score(labels, predicted_labels)
+    print(f"Accuracy: {acc}, F1: {f1}")
+    print(f"Threshold: {threshold}")
+    print(f"Time: {end-start:.2f}s")
 
-print(f"Accuracy: {acc}, F1: {f1}")
-print(f"Threshold: {threshold}")
-print(f"Time: {end-start:.2f}s")
+    save_plot(log_dir, origin_feature, "origin_feature")
+    for i, distorted_feature in enumerate(distorted_features):
+        save_plot(log_dir, distorted_feature, f"distorted_feature_{i+1}")
 
-elapsed = end - start
+    save_similarity_histogram(
+        log_dir, similarities, labels, threshold, "similarity_histogram"
+    )
+    with open(log_dir / "result.txt", "w") as f:
+        f.write(f"Accuracy: {acc}, F1: {f1}\n")
+        f.write(f"Threshold: {threshold}\n")
+        f.write(f"Time: {elapsed:.2f}s\n")
+        f.write(f"Similarities: {similarities}\n")
+        f.write(f"Threshold: {threshold}\n")
+        f.write(f"Labels: {labels}\n")
+        f.write(f"Predicted Labels: {predicted_labels}\n")
+    print(f"Results saved in {log_dir}")
 
-plt.figure()
-true_mask = np.array(labels) == 1
-range = (min(scores), max(scores))
-# plt.plot(sorted_scores)
-plt.hist(scores[~true_mask], bins=50, range=range, alpha=0.6, color="r")
-plt.hist(scores[true_mask], bins=50, range=range, alpha=0.6, color="g")
-plt.axvline(
-    threshold,
-    color="b",
-    linestyle="--",
-    label=f"Threshold: {threshold:.2f}",
-)
-plt.savefig(log_dir / "scores.png")
 
-with open(log_dir / "result.txt", "w") as f:
-    f.write(f"Accuracy: {acc}, F1: {f1}\n")
-    f.write(f"Threshold: {threshold}\n")
-    f.write(f"Time: {elapsed:.2f}s\n")
-    f.write(f"Scores: {scores}\n")
-    f.write(f"Threshold: {threshold}\n")
-    f.write(f"Labels: {labels}\n")
-    f.write(f"Predicted Labels: {predicted_labels}\n")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--origin_dir", type=str, default="data/A_track/original/")
+    parser.add_argument("--distorted_dir", type=str, default="data/A_track/distorted/")
+    parser.add_argument("--label_file", type=str, default="data/A_track/label.txt")
+    parser.add_argument("--log_dir", type=str, default="log_dir")
+    parser.add_argument("--use_cache", action="store_true")
+    args = parser.parse_args()
 
-# main.py를 log_dir에 복사
-os.system(f"cp main.py {log_dir}")
+    log_dir = Path(args.log_dir)
+    log_dir.mkdir(exist_ok=True)
+    main(args)
