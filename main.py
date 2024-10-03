@@ -55,7 +55,7 @@ def main(args):
     # predict labels based on similarity
     classifier = SimilarityClassifier()
     predicted_labels, info = classifier.predict(
-        origin_feature, distorted_features, origin_mask, distorted_masks
+        origin_feature, distorted_features, origin_mask, distorted_masks, threshold=0.5
     )
     threshold = info["threshold"]
     similarities = info["similarities"]
