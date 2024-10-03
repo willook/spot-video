@@ -16,7 +16,7 @@ dependencies = [
     "opencv-python",
     "numpy",
     "gdown",
-    "zipfile",
+    "zipfile2",
     "matplotlib",
     "scikit-image",
 ]
