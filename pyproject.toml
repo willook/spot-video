@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spot-video"
+version = "0.0.1"
+description = ""
+authors = [
+    { name = "willook", email = "jonghwa@actnova.io" }
+]
+license = { text = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "opencv-python",
+    "numpy",
+    "gdown",
+    "zipfile",
+    "matplotlib",
+    "scikit-image",
+]
+
+[tool.setuptools]
+py-modules = ["spotvideo"]
+
+[project.urls]
+homepage = "https://actnova.io"
+repository = "https://github.com/willook/spot-video"

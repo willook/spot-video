@@ -1,0 +1,11 @@
+# Byte-compiled / optimized / DLL files
+spot_video.egg-info
+__pycache__/
+
+# input
+data.zip
+data
+
+# output
+log_dir
+log_dir*
