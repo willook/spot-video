@@ -24,6 +24,7 @@ def main(args):
     distorted_dir = args.distorted_dir
     label_file = args.label_file
     log_dir = Path(args.log_dir)
+    log_dir.mkdir(exist_ok=True)
 
     assert os.path.isdir(origin_dir), f"Cannot find directory: {origin_dir}"
     assert os.path.isdir(distorted_dir), f"Cannot find directory: {distorted_dir}"
@@ -102,13 +103,14 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--origin_dir", type=str, default="data/A_track/original/")
-    parser.add_argument("--distorted_dir", type=str, default="data/A_track/distorted/")
-    parser.add_argument("--label_file", type=str, default="data/A_track/label.txt")
+    parser.add_argument(
+        "--origin_dir", type=str, default="data/markcloud/A_track/original/"
+    )
+    parser.add_argument(
+        "--distorted_dir", type=str, default="data/markcloud/A_track/distorted/"
+    )
+    parser.add_argument("--label_file", type=str, default="data/markcloud/label.txt")
     parser.add_argument("--log_dir", type=str, default="log_dir")
     parser.add_argument("--use_cache", action="store_true")
     args = parser.parse_args()
-
-    log_dir = Path(args.log_dir)
-    log_dir.mkdir(exist_ok=True)
     main(args)

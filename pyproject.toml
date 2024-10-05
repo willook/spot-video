@@ -19,6 +19,9 @@ dependencies = [
     "zipfile2",
     "matplotlib",
     "scikit-image",
+    "tqdm",
+    "ffmpeg-python",
+    "pytubefix"
 ]
 
 [tool.setuptools]

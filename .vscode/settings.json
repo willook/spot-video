@@ -7,6 +7,8 @@
     "tqdm",
     "skimage",
     "spotvideo",
-    "preprocess"
+    "preprocess",
+    "markcloud",
+    "pytubefix",
   ],
 }
