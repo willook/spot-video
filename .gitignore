@@ -4,8 +4,8 @@ __pycache__/
 .venv
 
 # input
-data.zip
 data
+metadata.json
 
 # output
 log_dir
