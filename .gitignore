@@ -2,6 +2,7 @@
 spot_video.egg-info
 __pycache__/
 .venv
+ffmpeg.exe
 
 # input
 data

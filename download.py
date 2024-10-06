@@ -107,7 +107,7 @@ def generate_label(data_dir):
     labels = []
     video_meta_filename = data_dir / "A_track/video_meta.txt"
     label_filename = data_dir / "label.txt"
-    with open(video_meta_filename, "r") as f:
+    with open(video_meta_filename, "r", encoding="utf8") as f:
         for line in f:
             words = line.strip().split()
             if len(words) == 0:
@@ -118,14 +118,14 @@ def generate_label(data_dir):
     assert len(labels) == 90, f"labels length should be 90, but {len(labels)}"
     assert sum(labels) == 72, f"labels sum should be 72, but {sum(labels)}"
 
-    with open(label_filename, "w") as f:
+    with open(label_filename, "w", encoding="utf8") as f:
         for label in labels:
             f.write(f"{label}\n")
 
 
 if __name__ == "__main__":
     json_file = "metadata.json"
-    with open(json_file, "r") as f:
+    with open(json_file, "r", encoding="utf8") as f:
         metadata = json.load(f)
     data_dir = "data"
     download_markcloud_dataset(metadata["markcloud"], data_dir)
