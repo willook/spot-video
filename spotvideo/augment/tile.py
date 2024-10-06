@@ -1,12 +1,16 @@
-from abstract_image_augmentor import AbstractImageAugmentor
+from .abstract_image_augmentor import AbstractImageAugmentor
 import numpy as np
 import cv2
 
 from matplotlib import pyplot as plt
 
+
 class Tile(AbstractImageAugmentor):
     def __init__(self, tile_num=2):
         self.tile_num = tile_num
+
+    def getName(self):
+        return f"{self.__class__.__name__}({self.tile_num})"
 
     def __call__(self, image):
 
@@ -17,7 +21,6 @@ class Tile(AbstractImageAugmentor):
         small_size = original_width // self.tile_num, original_height // self.tile_num
         small_image = cv2.resize(image, small_size)
 
-
         # Create a new image by tiling the small image
         tiled_image = np.tile(small_image, (self.tile_num, self.tile_num, 1))
 
@@ -27,7 +30,7 @@ class Tile(AbstractImageAugmentor):
         return tiled_image
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     width = 200
     height = 100
     x = np.linspace(0, 1, width)
@@ -40,7 +43,7 @@ if __name__ == '__main__':
     test = cv2.normalize(test, None, 0, 1.0, cv2.NORM_MINMAX)
 
     augmentor = Tile()
-    
+
     output = augmentor(test)
 
     plt.subplot(1, 2, 1)

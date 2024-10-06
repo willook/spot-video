@@ -75,7 +75,9 @@ def download_youtube_dataset(metadata, root_dir="data"):
         end_time = chapter.start_seconds + chapter.duration - 1
         if end_time - start_time < 10:
             continue
-        output_filename = path_to_split / f"{uid}c{str(k).zfill(3)}.mp4"
+        filename = f"{uid}c{str(k).zfill(3)}"
+        os.makedirs(path_to_split / filename / "original", exist_ok=True)
+        output_filename = path_to_split / filename / "original" / f"{filename}.mp4"
         k += 1
         if not os.path.exists(output_filename):
             ffmpeg_extract_clip(video_filename, output_filename, start_time, end_time)

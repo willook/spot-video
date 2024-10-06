@@ -1,19 +1,24 @@
-from abstract_image_augmentor import AbstractImageAugmentor
+from .abstract_image_augmentor import AbstractImageAugmentor
 import numpy as np
 from enum import Enum
 
 from matplotlib import pyplot as plt
+
 
 class FlipDirection(Enum):
     Vertical = 0
     Horizontal = 1
     Diagonal = 2
 
+
 class Flip(AbstractImageAugmentor):
-    def __init__(self, direction : FlipDirection = None):
+    def __init__(self, direction: FlipDirection = None):
         if direction is None:
             direction = np.random.choice(FlipDirection)
         self.direction = direction
+
+    def getName(self):
+        return f"{self.__class__.__name__}({self.direction})"
 
     def __call__(self, image):
         if self.direction is FlipDirection.Horizontal:
@@ -23,7 +28,8 @@ class Flip(AbstractImageAugmentor):
         if self.direction is FlipDirection.Diagonal:
             return np.flip(image, axis=[0, 1])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     x = np.linspace(0, 1, 200)
     y = np.linspace(0, 1, 100)
     xx, yy = np.meshgrid(x, y)

@@ -1,11 +1,13 @@
-from abstract_image_augmentor import AbstractImageAugmentor
+from .abstract_image_augmentor import AbstractImageAugmentor
 import numpy as np
 import cv2
 
 from matplotlib import pyplot as plt
 
+
 class AffineTransform(AbstractImageAugmentor):
-    def __init__(self, matrix:np.array=None):
+    def __init__(self, matrix: np.array = None):
+        self.matrix = matrix
         if matrix is None:
             mag = np.random.rand() * 5 + 4
             offset = np.random.rand() * 100 - 50
@@ -16,17 +18,21 @@ class AffineTransform(AbstractImageAugmentor):
             points2 += ref + offset
             self.updateMatrixWithPoints(points1, points2)
 
+    def getName(self):
+        return f"{self.__class__.__name__}({self.matrix})"
+
     def __call__(self, image):
         height, width, _ = image.shape
         image = cv2.warpAffine(image, self.matrix, (width, height))
         return image
-    
+
     def updateMatrixWithPoints(self, orig_points, transformed_points):
         orig_points = np.float32(orig_points)
         transformed_points = np.float32(transformed_points)
         self.matrix = cv2.getAffineTransform(orig_points, transformed_points)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     width = 200
     height = 100
     x = np.linspace(0, 1, width)
@@ -38,7 +44,7 @@ if __name__ == '__main__':
     test = np.stack([test, test, test], axis=-1).astype(np.float32)
     test = cv2.normalize(test, None, 0, 1.0, cv2.NORM_MINMAX)
     augmentor = AffineTransform()
-    
+
     output = augmentor(test)
 
     plt.subplot(1, 2, 1)

@@ -1,27 +1,31 @@
-from abstract_image_augmentor import AbstractImageAugmentor
+from .abstract_image_augmentor import AbstractImageAugmentor
 import numpy as np
 import cv2
 
 from matplotlib import pyplot as plt
 
+
 class FrameDrop(AbstractImageAugmentor):
-    def __init__(self, rate:int=None):
+    def __init__(self, rate: int = None):
         if rate is None:
             rate = 4
         self.rate = rate
         self.count = 0
         self.out_image = None
 
+    def getName(self):
+        return f"{self.__class__.__name__}({self.rate})"
+
     def __call__(self, image):
         if self.count % self.rate == 0:
             self.count = 0
             self.out_image = image
-            
+
         self.count += 1
         return self.out_image
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     width = 200
     height = 100
@@ -35,7 +39,7 @@ if __name__ == '__main__':
 
         test = np.sin(idx * 0.4 + 2 * np.pi * (xx + yy))
         test = cv2.normalize(test, None, 0, 1.0, cv2.NORM_MINMAX)
-        
+
         output = augmentor(test)
 
         plt.subplot(1, 2, 1)

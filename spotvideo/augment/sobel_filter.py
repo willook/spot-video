@@ -1,12 +1,16 @@
-from abstract_image_augmentor import AbstractImageAugmentor
+from .abstract_image_augmentor import AbstractImageAugmentor
 import numpy as np
 import cv2
 
 from matplotlib import pyplot as plt
 
+
 class SobelFilter(AbstractImageAugmentor):
     def __init__(self, kernel_size=5):
         self.kernel_size = kernel_size
+
+    def getName(self):
+        return f"{self.__class__.__name__}({self.kernel_size})"
 
     def __call__(self, image):
         # Apply Sobel filter
@@ -24,7 +28,7 @@ class SobelFilter(AbstractImageAugmentor):
         return image
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     width = 200
     height = 100
     x = np.linspace(0, 1, width)
@@ -37,7 +41,7 @@ if __name__ == '__main__':
     test = cv2.normalize(test, None, 0, 1.0, cv2.NORM_MINMAX)
 
     augmentor = SobelFilter()
-    
+
     output = augmentor(test)
 
     plt.subplot(1, 2, 1)
