@@ -18,12 +18,12 @@ class AddNoise(AbstractImageAugmentor):
         gaussian_noise = np.random.normal(self.mean, self.sigma, image.shape).astype(
             np.float32
         )
-        poisson_noise = np.random.poisson(image * 255).astype(np.float32) / 255.0
-        poisson_noise -= np.mean(poisson_noise)
+        # poisson_noise = np.random.poisson(image * 255).astype(np.float32) / 255.0
+        # poisson_noise -= np.mean(poisson_noise)
 
         # Add the Gaussian noise to the image
         image = cv2.add(image, gaussian_noise)
-        image = cv2.add(image, poisson_noise)
+        # image = cv2.add(image, poisson_noise)
         image = np.clip(image, a_min=0, a_max=1)
 
         return image

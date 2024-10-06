@@ -33,13 +33,17 @@ class Augmentor:
             self.augmentation_class_name += " Identity"
         else:
             count = 0
+            class_list = list()
             while True:
                 aug_name, aug_class = random.choice(
                     list(self.augmentation_dict.items())
                 )
                 if "identity" in aug_name.lower():
                     continue
+                if aug_class in class_list:
+                    continue
 
+                class_list.append(aug_class)
                 self.augmentations.append(aug_class())
 
                 self.augmentation_names_with_params += (

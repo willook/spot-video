@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 
 class MultiplyNoise(AbstractImageAugmentor):
-    def __init__(self, mean=1, sigma=0.5):
+    def __init__(self, mean=1, sigma=0.3):
         self.mean = mean
         self.sigma = sigma
         # Generate Gaussian noise

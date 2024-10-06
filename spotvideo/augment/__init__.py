@@ -10,6 +10,7 @@ from .gamma import Gamma
 from .gaussian_blur import GaussianBlur
 from .grayscale import GrayScale
 from .identity import Identity
+from .invert import Invert
 from .mirror import Mirror
 from .multiply_noise import MultiplyNoise
 from .perspective_transform import PerspectiveTransform
@@ -32,6 +33,7 @@ __all__ = [
     "GaussianBlur",
     "GrayScale",
     "Identity",
+    "Invert",
     "Mirror",
     "MultiplyNoise",
     "PerspectiveTransform",
