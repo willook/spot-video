@@ -4,7 +4,7 @@
 ## Quick start
 ```
 pip install -e .
-python download.py {file_id}
+python download.py metadata.json
 python main.py
 ```
 
