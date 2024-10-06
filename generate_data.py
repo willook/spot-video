@@ -32,10 +32,13 @@ class Augmentor:
             )
             self.augmentation_class_name += " Identity"
         else:
-            for _ in range(number_of_augmentation):
+            count = 0
+            while True:
                 aug_name, aug_class = random.choice(
                     list(self.augmentation_dict.items())
                 )
+                if "identity" in aug_name.lower():
+                    continue
 
                 self.augmentations.append(aug_class())
 
@@ -44,6 +47,11 @@ class Augmentor:
                 )
 
                 self.augmentation_class_name += f" {aug_name}"
+
+                count += 1
+
+                if count >= number_of_augmentation:
+                    break
 
     def __call__(self, frame):
         for aug in self.augmentations:
