@@ -10,5 +10,6 @@
     "preprocess",
     "markcloud",
     "pytubefix",
+    "ndarray",
   ],
 }

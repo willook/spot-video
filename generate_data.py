@@ -103,9 +103,8 @@ def augment_video(
         meta_file.write(f"{idx}{aug.getName()}\n")
 
         # Define the codec and create a VideoWriter object
-        writer = cv2.VideoWriter(
-            output_dir / f"{idx}.mp4", fourcc, fps, (width, height)
-        )
+        filename = f"{video_path.stem}d{str(idx).zfill(3)}.mp4"
+        writer = cv2.VideoWriter(output_dir / filename, fourcc, fps, (width, height))
 
         # Process frames with tqdm progress bar
         with tqdm(
@@ -133,12 +132,8 @@ def augment_video(
     meta_file.close()
 
 
-def main(args):
-    clip_dir = Path(args.clip_dir)
+def generate_distorted_videos(clip_dir, number_of_output, max_number_of_augmentation):
     assert os.path.isdir(clip_dir), f"Cannot find directory: {clip_dir}"
-
-    number_of_output = args.number_of_output
-    max_number_of_augmentation = args.max_number_of_augmentation
 
     clip_list = list(clip_dir.glob("*"))
     clip_file_list = list(clip_dir.glob("*/original/*.mp4"))
@@ -158,15 +153,32 @@ def main(args):
         print(f"Process {video_input.name} Done")
 
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+
+
+def main(args):
+    set_seed(args.seed)
+    dirs = os.listdir(args.clip_dir)
+    for dir_name in dirs:
+        generate_distorted_videos(
+            Path(args.clip_dir) / dir_name,
+            args.number_of_output,
+            args.max_number_of_augmentation,
+        )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--clip_dir",
         type=str,
-        default="data/youtube/v001/",
+        default="data/youtube/",
         help="clip_dir/{clip_name}/original/{clip_name}.mp4",
     )
     parser.add_argument("--number_of_output", type=int, default=2)
     parser.add_argument("--max_number_of_augmentation", type=int, default=3)
+    parser.add_argument("--seed", type=int, default=1234)
     args = parser.parse_args()
     main(args)

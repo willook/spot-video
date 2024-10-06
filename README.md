@@ -4,7 +4,8 @@
 ## Quick start
 ```
 pip install -e .
-python download.py metadata.json
+python download.py
+python generate_data.py
 python main.py
 ```
 
@@ -14,6 +15,7 @@ spotvideo
 - augment: 김현종이 만들 것
 - model: 모델
 - preprocess: 이미지, 신호 전처리 등
+- type: dataset, result 등 custom data class
 - util: 잡다
 ```
 
