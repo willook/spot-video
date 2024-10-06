@@ -22,7 +22,7 @@ dependencies = [
     "tqdm",
     "ffmpeg-python",
     "pytubefix",
-    "fastdtw,
+    "fastdtw",
 ]
 
 [tool.setuptools]
