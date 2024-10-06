@@ -1,6 +1,10 @@
 import numpy as np
 
 
+def cosine_similarity(x: np.ndarray, y: np.ndarray) -> float:
+    return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+
 def f1_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     tp = sum([1 for x, y in zip(y_true, y_pred) if x == y and x == 1])
     fp = sum([1 for x, y in zip(y_true, y_pred) if x != y and y == 1])

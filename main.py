@@ -23,6 +23,9 @@ def main(args):
     origin_dir = args.origin_dir
     distorted_dir = args.distorted_dir
     label_file = args.label_file
+    threshold = args.threshold
+    same_length = args.same_length
+
     log_dir = Path(args.log_dir)
     log_dir.mkdir(exist_ok=True)
 
@@ -56,7 +59,12 @@ def main(args):
     # predict labels based on similarity
     classifier = SimilarityClassifier()
     predicted_labels, info = classifier.predict(
-        origin_feature, distorted_features, origin_mask, distorted_masks, threshold=0.5
+        origin_feature,
+        distorted_features,
+        origin_mask,
+        distorted_masks,
+        threshold=threshold,
+        same_length=same_length,
     )
     threshold = info["threshold"]
     similarities = info["similarities"]
@@ -73,8 +81,8 @@ def main(args):
     for i, (label, predicted_label, similarity) in enumerate(
         zip(labels, predicted_labels, similarities)
     ):
-        if label == predicted_label:
-            continue
+        # if label == predicted_label:
+        #     continue
         print(
             f"[{i+1}] label {label}, predicted {predicted_label}, similarity {similarity}"
         )
@@ -112,5 +120,11 @@ if __name__ == "__main__":
     parser.add_argument("--label_file", type=str, default="data/markcloud/label.txt")
     parser.add_argument("--log_dir", type=str, default="log_dir")
     parser.add_argument("--use_cache", action="store_true")
+    parser.add_argument(
+        "--threshold", type=float, default=None, help="If None, use otsu thresholding"
+    )
+    parser.add_argument(
+        "--same_length", action="store_true", help="If true, not use DTW"
+    )
     args = parser.parse_args()
     main(args)

@@ -1,7 +1,3 @@
-import os
-from typing import Union
-from pathlib import Path
-
 import cv2
 import numpy as np
 from tqdm import tqdm
@@ -47,7 +43,7 @@ class FeatureExtractor:
         return self.preprocess_feature(feature_np)
 
     def preprocess_feature(
-        self, feature: np.ndarray, p_value: float = 0.05, window_size: int = 5
+        self, feature: np.ndarray, p_value: float = 0.05, window_size: int = 11
     ):
         # remove p_value/2 from both ends
         index = np.argsort(feature)
@@ -62,7 +58,7 @@ class FeatureExtractor:
         smoothed = np.convolve(
             band_passed, np.ones(window_size) / window_size, mode="same"
         )
-
+        
         # normalize feature mean to 0, std to 1
         normalized = (smoothed - np.mean(smoothed)) / np.std(smoothed)
 

@@ -21,7 +21,8 @@ dependencies = [
     "scikit-image",
     "tqdm",
     "ffmpeg-python",
-    "pytubefix"
+    "pytubefix",
+    "fastdtw,
 ]
 
 [tool.setuptools]

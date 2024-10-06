@@ -1,6 +1,10 @@
 import numpy as np
 from skimage.filters import threshold_otsu
 from tqdm import tqdm
+from fastdtw import fastdtw
+from scipy.spatial.distance import euclidean
+
+from spotvideo.util.metric import cosine_similarity
 
 
 class SimilarityClassifier:
@@ -14,6 +18,7 @@ class SimilarityClassifier:
         origin_mask: np.ndarray = None,
         distorted_masks: np.ndarray = None,
         threshold: float = None,
+        same_length: bool = True,
     ):
         """
         Predict similarity score between origin and distorted features
@@ -23,6 +28,7 @@ class SimilarityClassifier:
             origin_mask (np.ndarray): 1D array of origin mask
             distorted_masks (List[np.ndarray]): List of 1D array of distorted masks
             threshold (float): threshold to classify, if None, use otsu thresholding
+            same_length (bool): whether to compare features of same length
         Returns:
             list: label of distorted features, 1 for similar, 0 for dissimilar
         """
@@ -35,8 +41,14 @@ class SimilarityClassifier:
         for distorted_feature, distorted_mask in zip(
             distorted_features, distorted_masks
         ):
-            similarity = self.compute_similarity(
-                origin_feature, distorted_feature, origin_mask, distorted_mask
+            similarity = (
+                self.compute_similarity(
+                    origin_feature, distorted_feature, origin_mask, distorted_mask
+                )
+                if same_length
+                else self.compute_dtw_similarity(
+                    origin_feature, distorted_feature, origin_mask, distorted_mask
+                )
             )
             similarities.append(similarity)
             pbar.update(1)
@@ -53,6 +65,18 @@ class SimilarityClassifier:
             "similarities": np.array(similarities),
         }
         return predicted_labels, info
+
+    def compute_dtw_similarity(
+        self, origin_feature, distorted_feature, origin_mask, distorted_mask
+    ):
+        feature1 = origin_feature[origin_mask]
+        feature2 = distorted_feature[distorted_mask]
+        distance, path = fastdtw(feature1, feature2)
+        # breakpoint()
+        matched_feature1 = np.array([feature1[i] for i, j in path])
+        matched_feature2 = np.array([feature2[j] for i, j in path])
+        similarity = cosine_similarity(matched_feature1, matched_feature2)
+        return similarity
 
     def compute_similarity(
         self, origin_feature, distorted_feature, origin_mask=None, distorted_mask=None
@@ -76,7 +100,5 @@ class SimilarityClassifier:
 
         origin_masked = origin_feature * mask
         distorted_masked = distorted_feature * mask
-        similarity = np.dot(origin_masked, distorted_masked) / (
-            np.linalg.norm(origin_masked) * np.linalg.norm(distorted_masked)
-        )
+        similarity = cosine_similarity(origin_masked, distorted_masked)
         return similarity
