@@ -12,7 +12,7 @@ from spotvideo import augment
 
 
 class Augmentor:
-    def __init__(self, number_of_augmentation=1, identity_only=False):
+    def __init__(self, max_number_of_augmentation=1, identity_only=False):
         self.augmentation_dict = dict(
             [
                 (name, cls)
@@ -24,6 +24,8 @@ class Augmentor:
         self.augmentation_class_name = ""
         self.augmentation_names_with_params = ""
         self.augmentations = list()
+
+        number_of_augmentation = random.randint(1, max_number_of_augmentation)
 
         if identity_only:
             self.augmentations.append(augment.Identity())
@@ -71,7 +73,10 @@ class Augmentor:
 
 
 def augment_video(
-    video_path: str, clip_dir: str, number_of_output: int, number_of_augmentation: int
+    video_path: str,
+    clip_dir: str,
+    number_of_output: int,
+    max_number_of_augmentation: int,
 ):
     output_dir = clip_dir / "distorted"
     os.makedirs(output_dir, exist_ok=True)
@@ -93,7 +98,7 @@ def augment_video(
         print(f"Processing {idx}.mp4 of {video_path.name}")
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset to the first frame
 
-        aug = Augmentor(number_of_augmentation)
+        aug = Augmentor(max_number_of_augmentation)
 
         meta_file.write(f"{idx}{aug.getName()}\n")
 
@@ -133,7 +138,7 @@ def main(args):
     assert os.path.isdir(clip_dir), f"Cannot find directory: {clip_dir}"
 
     number_of_output = args.number_of_output
-    number_of_augmentation = args.number_of_augmentation
+    max_number_of_augmentation = args.max_number_of_augmentation
 
     clip_list = list(clip_dir.glob("*"))
     clip_file_list = list(clip_dir.glob("*/original/*.mp4"))
@@ -147,7 +152,9 @@ def main(args):
 
     for video_input, video_path in zip(clip_file_list, clip_list):
         print(f"Process {video_input.name}")
-        augment_video(video_input, video_path, number_of_output, number_of_augmentation)
+        augment_video(
+            video_input, video_path, number_of_output, max_number_of_augmentation
+        )
         print(f"Process {video_input.name} Done")
 
 
@@ -160,6 +167,6 @@ if __name__ == "__main__":
         help="clip_dir/{clip_name}/original/{clip_name}.mp4",
     )
     parser.add_argument("--number_of_output", type=int, default=2)
-    parser.add_argument("--number_of_augmentation", type=int, default=2)
+    parser.add_argument("--max_number_of_augmentation", type=int, default=3)
     args = parser.parse_args()
     main(args)
