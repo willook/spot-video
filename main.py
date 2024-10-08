@@ -1,60 +1,36 @@
 import os
-import pickle
 import time
-from pathlib import Path
 import argparse
+from pathlib import Path
+
+import numpy as np
 
 from spotvideo.preprocess.signal import FeatureExtractor
 from spotvideo.util.draw import save_plot, save_similarity_histogram
 from spotvideo.model.similarity import SimilarityClassifier
 from spotvideo.util.metric import accuracy, f1_score
+from spotvideo.type.dataset import DatasetConstructor
+from spotvideo.type.result import Result
 
 
-def get_distorted_videos(distorted_dir):
-    return [
-        os.path.join(distorted_dir, video_name)
-        for video_name in sorted(
-            os.listdir(distorted_dir), key=lambda x: int(Path(x).stem)
-        )
-    ]
-
-
-def main(args):
-    origin_dir = args.origin_dir
-    distorted_dir = args.distorted_dir
-    label_file = args.label_file
-    threshold = args.threshold
-    same_length = args.same_length
-
-    log_dir = Path(args.log_dir)
-    log_dir.mkdir(exist_ok=True)
-
-    assert os.path.isdir(origin_dir), f"Cannot find directory: {origin_dir}"
-    assert os.path.isdir(distorted_dir), f"Cannot find directory: {distorted_dir}"
-    assert os.path.isfile(label_file), f"Cannot find file: {label_file}"
+def evaluate(
+    origin_video: str,
+    distorted_videos: list[str],
+    labels: np.ndarray,
+    log_dir: Path,
+    args: argparse.Namespace,
+):
+    threshold: float = args.threshold
+    same_length: bool = args.same_length
+    use_cache: bool = args.use_cache
 
     start = time.time()
 
-    # find target videos
-    origin_video = os.path.join(origin_dir, os.listdir(origin_dir)[0])
-    distorted_videos = get_distorted_videos(distorted_dir)
-
-    # extract features or load from cache if use_cache is True
-    try:
-        cache_file = log_dir / "cache_feature.pickle"
-        assert args.use_cache and cache_file.exists()
-        with open(cache_file, "rb") as f:
-            origin_feature, origin_mask, distorted_features, distorted_masks = (
-                pickle.load(f)
-            )
-    except AssertionError:
-        extractor = FeatureExtractor()
-        origin_feature, origin_mask = extractor.extract(origin_video)
-        distorted_features, distorted_masks = extractor.batch_extract(distorted_videos)
-        with open(cache_file, "wb") as f:
-            pickle.dump(
-                (origin_feature, origin_mask, distorted_features, distorted_masks), f
-            )
+    extractor = FeatureExtractor()
+    origin_feature, origin_mask = extractor.extract(origin_video, use_cache=use_cache)
+    distorted_features, distorted_masks = extractor.batch_extract(
+        distorted_videos, use_cache=use_cache
+    )
 
     # predict labels based on similarity
     classifier = SimilarityClassifier()
@@ -72,10 +48,10 @@ def main(args):
     end = time.time()
     elapsed = end - start
 
-    # evaluate
-    labels = [int(line.strip()) for line in open(label_file)]
     acc = accuracy(labels, predicted_labels)
     f1 = f1_score(labels, predicted_labels)
+
+    result = Result(labels, predicted_labels, similarities, threshold, elapsed, acc, f1)
 
     # print and save results
     for i, (label, predicted_label, similarity) in enumerate(
@@ -91,6 +67,7 @@ def main(args):
     print(f"Threshold: {threshold}")
     print(f"Time: {end-start:.2f}s")
 
+    os.makedirs(log_dir, exist_ok=True)
     save_plot(log_dir, origin_feature, "origin_feature")
     for i, distorted_feature in enumerate(distorted_features):
         save_plot(log_dir, distorted_feature, f"distorted_feature_{i+1}")
@@ -107,18 +84,27 @@ def main(args):
         f.write(f"Labels: {labels}\n")
         f.write(f"Predicted Labels: {predicted_labels}\n")
     print(f"Results saved in {log_dir}")
+    return result
+
+
+def main(args):
+    dataset_constructor = DatasetConstructor(args.data_dir)
+    for key in dataset_constructor.keys():
+        log_dir = Path(args.log_dir) / key
+        origin_video, distorted_videos, labels = dataset_constructor.get_dataset(key)
+        if origin_video is None:
+            print(f"Category {key} does not have original video")
+            continue
+        assert (
+            len(distorted_videos) != 0
+        ), f"Category {key} does not have distorted videos"
+        evaluate(origin_video, distorted_videos, labels, log_dir, args)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--origin_dir", type=str, default="data/markcloud/A_track/original/"
-    )
-    parser.add_argument(
-        "--distorted_dir", type=str, default="data/markcloud/A_track/distorted/"
-    )
-    parser.add_argument("--label_file", type=str, default="data/markcloud/label.txt")
-    parser.add_argument("--log_dir", type=str, default="log_dir")
+    parser.add_argument("--data_dir", type=str, default="data/markcloud/")
+    parser.add_argument("--log_dir", type=str, default="log_dir/markcloud/")
     parser.add_argument("--use_cache", action="store_true")
     parser.add_argument(
         "--threshold", type=float, default=None, help="If None, use otsu thresholding"
