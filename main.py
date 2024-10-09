@@ -23,6 +23,7 @@ def evaluate(
     threshold: float = args.threshold
     same_length: bool = args.same_length
     use_cache: bool = args.use_cache
+    plot: bool = args.plot
 
     start = time.time()
 
@@ -57,24 +58,12 @@ def evaluate(
     for i, (label, predicted_label, similarity) in enumerate(
         zip(labels, predicted_labels, similarities)
     ):
-        # if label == predicted_label:
-        #     continue
+        if label == predicted_label:
+            continue
         print(
-            f"[{i+1}] label {label}, predicted {predicted_label}, similarity {similarity}"
+            f"label {label}, predicted {predicted_label}, similarity {similarity:.3f}, origin: {Path(origin_video).stem}, distorted: {Path(distorted_videos[i]).stem}"
         )
-
-    print(f"Accuracy: {acc}, F1: {f1}")
-    print(f"Threshold: {threshold}")
-    print(f"Time: {end-start:.2f}s")
-
     os.makedirs(log_dir, exist_ok=True)
-    save_plot(log_dir, origin_feature, "origin_feature")
-    for i, distorted_feature in enumerate(distorted_features):
-        save_plot(log_dir, distorted_feature, f"distorted_feature_{i+1}")
-
-    save_similarity_histogram(
-        log_dir, similarities, labels, threshold, "similarity_histogram"
-    )
     with open(log_dir / "result.txt", "w") as f:
         f.write(f"Accuracy: {acc}, F1: {f1}\n")
         f.write(f"Threshold: {threshold}\n")
@@ -83,12 +72,48 @@ def evaluate(
         f.write(f"Threshold: {threshold}\n")
         f.write(f"Labels: {labels}\n")
         f.write(f"Predicted Labels: {predicted_labels}\n")
+
+    if plot:  # this take a few seconds
+        save_plot(log_dir, origin_feature, "origin_feature")
+        for i, distorted_feature in enumerate(distorted_features):
+            save_plot(
+                log_dir,
+                distorted_feature,
+                f"distorted_feature_{Path(distorted_videos[i]).stem}",
+            )
+
+        save_similarity_histogram(
+            log_dir, similarities, labels, threshold, "similarity_histogram"
+        )
+
+    print(f"Accuracy: {acc}, F1: {f1}")
+    print(f"Threshold: {threshold}")
+    print(f"Time: {elapsed:.2f}s")
     print(f"Results saved in {log_dir}")
     return result
 
 
+def summarize(results):
+    sum_acc = 0
+    sum_f1 = 0
+    sum_time = 0
+    n_samples = 0
+    for result in results:
+        sum_acc += result.acc * len(result.labels)
+        sum_f1 += result.f1 * len(result.labels)
+        sum_time += result.elapsed
+        n_samples += len(result.labels)
+    average_acc = sum_acc / n_samples
+    average_f1 = sum_f1 / n_samples
+    average_time = sum_time / len(results)
+    print(f"Average Accuracy: {average_acc:.3f}")
+    print(f"Average F1: {average_f1:.3f}")
+    print(f"Average Time: {average_time:.3f}s")
+
+
 def main(args):
     dataset_constructor = DatasetConstructor(args.data_dir)
+    results = []
     for key in dataset_constructor.keys():
         log_dir = Path(args.log_dir) / key
         origin_video, distorted_videos, labels = dataset_constructor.get_dataset(key)
@@ -98,7 +123,9 @@ def main(args):
         assert (
             len(distorted_videos) != 0
         ), f"Category {key} does not have distorted videos"
-        evaluate(origin_video, distorted_videos, labels, log_dir, args)
+        result = evaluate(origin_video, distorted_videos, labels, log_dir, args)
+        results.append(result)
+    summarize(results)
 
 
 if __name__ == "__main__":
@@ -106,6 +133,9 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", type=str, default="data/markcloud/")
     parser.add_argument("--log_dir", type=str, default="log_dir/markcloud/")
     parser.add_argument("--use_cache", action="store_true")
+    parser.add_argument(
+        "--plot", action="store_true", help="If true, save plots (slow)"
+    )
     parser.add_argument(
         "--threshold", type=float, default=None, help="If None, use otsu thresholding"
     )

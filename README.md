@@ -8,6 +8,19 @@ python download.py
 python generate_data.py
 python main.py
 ```
+## 성능
+### markcloud 데이터 성능 - 10.09
+```
+python main.py --same_length --use_cache --threshold 0.85 --data_dir data/markcloud --log_dir log_dir/markcloud/
+```
+- Average Accuracy: 0.967  
+- Average F1: 0.979  
+### youtube 데이터 성능 - 10.09
+```
+python main.py --same_length --use_cache --threshold 0.85 --data_dir data/youtube --log_dir log_dir/youtube/
+```
+- Average Accuracy: 0.998  
+- Average F1: 0.909  
 
 ## 구조
 ```
@@ -54,4 +67,6 @@ spotvideo
 - [ ] drawing 부분 분리
 - [ ] 로직 추가 삭제 쉽게 개선
 - [ ] 변형 동영상 직접 제작 및 실험 추가
+- [ ] from scipy.spatial import procrustes
+- [ ] 선형 stretching, shift 변형 찾기
 

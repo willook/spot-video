@@ -21,16 +21,26 @@ class FeatureExtractor:
 
         return features, masks
 
+    def check_cache(self, key: str):
+        return Path(key).exists()
+
+    def load_cache(self, key: str):
+        with open(key, "rb") as f:
+            feature, mask = pickle.load(f)
+        return feature, mask
+
+    def save_cache(self, key: str, value: tuple):
+        with open(key, "wb") as f:
+            pickle.dump(value, f)
+
     def extract(self, video_path: str, key_frame_interval=11, use_cache=False):
         try:
             cache_file = video_path + ".cache"
-            assert use_cache and Path(cache_file).exists()
-            with open(cache_file, "rb") as f:
-                feature, mask = pickle.load(f)
+            assert use_cache and self.check_cache(cache_file)
+            feature, mask = self.load_cache(cache_file)
         except AssertionError:
             feature, mask = self._extract(video_path, key_frame_interval)
-            with open(cache_file, "wb") as f:
-                pickle.dump((feature, mask), f)
+            self.save_cache(cache_file, (feature, mask))
         return feature, mask
 
     def _extract(self, video_path: str, key_frame_interval=11):
