@@ -24,13 +24,16 @@ def evaluate(
     same_length: bool = args.same_length
     use_cache: bool = args.use_cache
     plot: bool = args.plot
+    key_frame_interval: int = args.key_frame_interval
 
     start = time.time()
 
     extractor = FeatureExtractor()
-    origin_feature, origin_mask = extractor.extract(origin_video, use_cache=use_cache)
+    origin_feature, origin_mask = extractor.extract(
+        origin_video, use_cache=use_cache, key_frame_interval=key_frame_interval
+    )
     distorted_features, distorted_masks = extractor.batch_extract(
-        distorted_videos, use_cache=use_cache
+        distorted_videos, use_cache=use_cache, key_frame_interval=key_frame_interval
     )
 
     # predict labels based on similarity
@@ -74,11 +77,13 @@ def evaluate(
         f.write(f"Predicted Labels: {predicted_labels}\n")
 
     if plot:  # this take a few seconds
-        save_plot(log_dir, origin_feature, "origin_feature")
-        for i, distorted_feature in enumerate(distorted_features):
+        save_plot(log_dir, origin_feature[origin_mask], "origin_feature")
+        for i, (distorted_feature, distorted_mask) in enumerate(
+            zip(distorted_features, distorted_masks)
+        ):
             save_plot(
                 log_dir,
-                distorted_feature,
+                distorted_feature[distorted_mask],
                 f"distorted_feature_{Path(distorted_videos[i]).stem}",
             )
 
@@ -112,7 +117,18 @@ def summarize(results):
 
 
 def main(args):
-    dataset_constructor = DatasetConstructor(args.data_dir)
+    reset_cache: bool = args.reset_cache
+    data_dir: str = args.data_dir
+    if reset_cache:
+        n_files = 0
+        for cache_file in Path(data_dir).rglob("*.cache"):
+            os.remove(cache_file)
+            n_files += 1
+        print(f"Removed {n_files} cache files in {data_dir}")
+
+    dataset_name = Path(data_dir).stem
+    dataset_constructor = DatasetConstructor(data_dir, dataset_name=dataset_name)
+
     results = []
     for key in dataset_constructor.keys():
         log_dir = Path(args.log_dir) / key
@@ -133,6 +149,10 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", type=str, default="data/markcloud/")
     parser.add_argument("--log_dir", type=str, default="log_dir/markcloud/")
     parser.add_argument("--use_cache", action="store_true")
+    parser.add_argument("--key_frame_interval", type=int, default=7)
+    parser.add_argument(
+        "--reset_cache", action="store_true", help="reset cache files before running"
+    )
     parser.add_argument(
         "--plot", action="store_true", help="If true, save plots (slow)"
     )

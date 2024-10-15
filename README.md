@@ -64,9 +64,6 @@ spotvideo
 속도 개선  
 
 ## TODO
-- [ ] drawing 부분 분리
-- [ ] 로직 추가 삭제 쉽게 개선
-- [ ] 변형 동영상 직접 제작 및 실험 추가
-- [ ] from scipy.spatial import procrustes
-- [ ] 선형 stretching, shift 변형 찾기
+- [ ] 선형 stretching, shift 변형 찾기?
+- [ ] download 기본 구조까지는 줘야함
 

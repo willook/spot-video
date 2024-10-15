@@ -47,18 +47,19 @@ class FeatureExtractor:
         cap = cv2.VideoCapture(video_path)
         assert cap.isOpened(), f"Cannot open video file: {video_path}"
         feature = []
-        i_frame = 1
-        ret, frame = cap.read()
+        _, frame = cap.read()
         prev_frame = preprocess_frame(frame)
-        while True:
-            ret, frame = cap.read()
-            i_frame += 1
-            if not ret:
-                break
-            if i_frame % key_frame_interval != 0:
+        total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        for i_frame in range(1, total_frame):
+            if i_frame % key_frame_interval == 0:
+                _, frame = cap.read()
+            else:
+                cap.grab()
                 continue
             current_frame = preprocess_frame(frame)
             diff_img = cv2.absdiff(prev_frame, current_frame)
+            # diff = np.mean((prev_frame - current_frame) ** 2)
+            # diff = ssim(prev_frame, current_frame)
             # 선형 배수가 아닐수도 있다
             # -> DTW로 해결할 수 있을 것 같다
             # 요부분을 유사도로 사용해도 되겠다
@@ -71,28 +72,32 @@ class FeatureExtractor:
         return self.preprocess_feature(feature_np)
 
     def preprocess_feature(
-        self, feature: np.ndarray, p_value: float = 0.05, window_size: int = 11
+        self, feature: np.ndarray, p_value: float = 0.05, window_size: int = 15
     ):
+        # 신호 미분
+        # feature = np.gradient(feature)
+
         # remove p_value from high
         index = np.argsort(feature)
-        # band_index = sorted(
-        #     index[int(len(index) * p_value / 2) : len(feature) - int(len(index) * p_value / 2)]
+        # pass_index = sorted(
+        #     index[
+        #         int(len(index) * p_value / 2) : len(feature)
+        #         - int(len(index) * p_value / 2)
+        #     ]
         # )
-        low_index = sorted(index[: len(feature) - int(len(index) * p_value)])
+        pass_index = sorted(index[: len(feature) - int(len(index) * p_value)])
         mask = np.zeros(len(feature), dtype=bool)
-        mask[low_index] = True
-        low_passed = feature[low_index]
+        mask[pass_index] = True
+        passed = feature[pass_index]
         # band_passed = feature[low_index]
 
         # smoothing with moving average
-        smoothed = np.convolve(
-            low_passed, np.ones(window_size) / window_size, mode="same"
-        )
-
+        smoothed = np.convolve(passed, np.ones(window_size) / window_size, mode="same")
+        # smoothed = passed
         # normalize feature mean to 0, std to 1
         normalized = (smoothed - np.mean(smoothed)) / np.std(smoothed)
 
         # recover the original length
         recovered = np.zeros(len(feature))
-        recovered[low_index] = normalized
+        recovered[pass_index] = normalized
         return recovered, mask

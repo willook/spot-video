@@ -81,6 +81,20 @@ class SimilarityClassifier:
     def compute_similarity(
         self, origin_feature, distorted_feature, origin_mask=None, distorted_mask=None
     ):
+        # # check cross correlation
+        # correlation = np.correlate(origin_feature, distorted_feature, mode="full")
+        # # argsort = np.argsort(correlation)
+        # sorted_correlation = np.argsort(correlation)
+
+        # shift1 = sorted_correlation[-1] - (len(origin_feature) - 1)
+        # shift2 = sorted_correlation[-2] - (len(origin_feature) - 1)
+
+        # print("Shift:", shift1, shift2)
+        # from matplotlib import pyplot as plt
+
+        # plt.plot(correlation)
+        # plt.savefig("correlation.png")
+        # breakpoint()
         signal_length = min(len(origin_feature), len(distorted_feature))
         origin_feature = origin_feature[:signal_length]
         distorted_feature = distorted_feature[:signal_length]

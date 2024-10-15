@@ -47,7 +47,7 @@ def bytes_to_megabytes(bytes_size):
 
 
 def download_youtube_dataset(metadata, root_dir="data"):
-    download_dir = Path(root_dir) / "download"
+    download_dir = Path(root_dir) / "downloads"
     os.makedirs(download_dir, exist_ok=True)
 
     video_filename = download_dir / (metadata["title"] + ".mp4")
@@ -86,10 +86,13 @@ def download_youtube_dataset(metadata, root_dir="data"):
 
 def download_markcloud_dataset(metadata, root_dir="data"):
     file_id = metadata["file_id"]
-    download_dir = Path(root_dir) / "download"
+    download_dir = Path(root_dir) / "downloads"
     zip_filename = download_dir / "data.zip"
+    data_dir = Path(root_dir) / "markcloud"
 
     os.makedirs(download_dir, exist_ok=True)
+    os.makedirs(data_dir, exist_ok=True)
+
     if not os.path.exists(zip_filename):
         gdown.download(
             url=f"https://drive.google.com/uc?id={file_id}",
@@ -99,61 +102,61 @@ def download_markcloud_dataset(metadata, root_dir="data"):
 
     with zipfile.ZipFile(zip_filename, "r") as zf:
         for member in tqdm(zf.infolist(), desc="Unzipping", unit="files"):
-            if not os.path.exists(download_dir / member.filename):
-                zf.extract(member, download_dir)
+            if not os.path.exists(data_dir / member.filename):
+                zf.extract(member, data_dir)
 
-    labels = generate_label(download_dir)
+    # labels = generate_label(download_dir)
 
-    # copy videos from A_track to video directory
-    data_dir = Path(root_dir) / "markcloud"
-    origin_video_dir = data_dir / "video1" / "original"
-    distorted_video_dir = data_dir / "video1" / "distorted"
-    origin_noise_dir = data_dir / "video2" / "original"
-    distorted_noise_dir = data_dir / "video2" / "distorted"
-    os.makedirs(origin_video_dir, exist_ok=True)
-    os.makedirs(distorted_video_dir, exist_ok=True)
-    os.makedirs(origin_noise_dir, exist_ok=True)
-    os.makedirs(distorted_noise_dir, exist_ok=True)
+    # # copy videos from A_track to video directory
+    # data_dir = Path(root_dir) / "markcloud"
+    # origin_video_dir = data_dir / "video1" / "original"
+    # distorted_video_dir = data_dir / "video1" / "distorted"
+    # origin_noise_dir = data_dir / "video2" / "original"
+    # distorted_noise_dir = data_dir / "video2" / "distorted"
+    # os.makedirs(origin_video_dir, exist_ok=True)
+    # os.makedirs(distorted_video_dir, exist_ok=True)
+    # os.makedirs(origin_noise_dir, exist_ok=True)
+    # os.makedirs(distorted_noise_dir, exist_ok=True)
 
-    for root, _, files in os.walk(download_dir / "A_track"):
-        root_path = Path(root)
-        for file in files:
-            if not file.endswith(".mpeg"):
-                continue
-            split = os.path.basename(root)
-            if split == "original":
-                file_from = root_path / file
-                file_to = origin_video_dir / file
-            elif split == "distorted":
-                index = int(Path(file).stem) - 1
-                file_from = root_path / file
-                file_to = (
-                    distorted_video_dir / file
-                    if labels[index] == 1
-                    else distorted_noise_dir / file
-                )
-            else:
-                raise ValueError(f"Unknown split: {split}")
-            if not os.path.exists(file_to):
-                shutil.copy(file_from, file_to)
+    # for root, _, files in os.walk(download_dir / "A_track"):
+    #     root_path = Path(root)
+    #     for file in files:
+    #         if not file.endswith(".mpeg"):
+    #             continue
+    #         split = os.path.basename(root)
+    #         if split == "original":
+    #             file_from = root_path / file
+    #             file_to = origin_video_dir / file
+    #         elif split == "distorted":
+    #             index = int(Path(file).stem) - 1
+    #             file_from = root_path / file
+    #             file_to = (
+    #                 distorted_video_dir / file
+    #                 if labels[index] == 1
+    #                 else distorted_noise_dir / file
+    #             )
+    #         else:
+    #             raise ValueError(f"Unknown split: {split}")
+    #         if not os.path.exists(file_to):
+    #             shutil.copy(file_from, file_to)
 
 
-def generate_label(data_dir):
-    labels = []
-    video_meta_filename = data_dir / "A_track/video_meta.txt"
-    label_filename = data_dir / "label.txt"
-    with open(video_meta_filename, "r", encoding="utf8") as f:
-        for line in f:
-            words = line.strip().split()
-            if len(words) == 0:
-                continue
-            label = 0 if words[1] == "노이즈" and words[2] == "데이터" else 1
-            labels.append(label)
+# def generate_label(data_dir):
+#     labels = []
+#     video_meta_filename = data_dir / "A_track/video_meta.txt"
+#     label_filename = data_dir / "label.txt"
+#     with open(video_meta_filename, "r", encoding="utf8") as f:
+#         for line in f:
+#             words = line.strip().split()
+#             if len(words) == 0:
+#                 continue
+#             label = 0 if words[1] == "노이즈" and words[2] == "데이터" else 1
+#             labels.append(label)
 
-    assert len(labels) == 90, f"labels length should be 90, but {len(labels)}"
-    assert sum(labels) == 72, f"labels sum should be 72, but {sum(labels)}"
+#     assert len(labels) == 90, f"labels length should be 90, but {len(labels)}"
+#     assert sum(labels) == 72, f"labels sum should be 72, but {sum(labels)}"
 
-    return labels
+#     return labels
 
 
 if __name__ == "__main__":
