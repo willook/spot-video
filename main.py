@@ -21,8 +21,7 @@ def evaluate(
     args: argparse.Namespace,
 ):
     threshold: float = args.threshold
-    same_length: bool = args.same_length
-    use_cache: bool = args.use_cache
+    dynamic_length: bool = args.dynamic_length
     plot: bool = args.plot
     key_frame_interval: int = args.key_frame_interval
 
@@ -30,10 +29,10 @@ def evaluate(
 
     extractor = FeatureExtractor()
     origin_feature, origin_mask = extractor.extract(
-        origin_video, use_cache=use_cache, key_frame_interval=key_frame_interval
+        origin_video, key_frame_interval=key_frame_interval
     )
     distorted_features, distorted_masks = extractor.batch_extract(
-        distorted_videos, use_cache=use_cache, key_frame_interval=key_frame_interval
+        distorted_videos, key_frame_interval=key_frame_interval
     )
 
     # predict labels based on similarity
@@ -44,7 +43,7 @@ def evaluate(
         origin_mask,
         distorted_masks,
         threshold=threshold,
-        same_length=same_length,
+        same_length=not dynamic_length,
     )
     threshold = info["threshold"]
     similarities = info["similarities"]
@@ -117,15 +116,7 @@ def summarize(results):
 
 
 def main(args):
-    reset_cache: bool = args.reset_cache
     data_dir: str = args.data_dir
-    if reset_cache:
-        n_files = 0
-        for cache_file in Path(data_dir).rglob("*.cache"):
-            os.remove(cache_file)
-            n_files += 1
-        print(f"Removed {n_files} cache files in {data_dir}")
-
     dataset_name = Path(data_dir).stem
     dataset_constructor = DatasetConstructor(data_dir, dataset_name=dataset_name)
 
@@ -148,19 +139,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", type=str, default="data/markcloud/")
     parser.add_argument("--log_dir", type=str, default="log_dir/markcloud/")
-    parser.add_argument("--use_cache", action="store_true")
-    parser.add_argument("--key_frame_interval", type=int, default=7)
-    parser.add_argument(
-        "--reset_cache", action="store_true", help="reset cache files before running"
-    )
+    parser.add_argument("--key_frame_interval", type=int, default=11)
     parser.add_argument(
         "--plot", action="store_true", help="If true, save plots (slow)"
     )
     parser.add_argument(
-        "--threshold", type=float, default=None, help="If None, use otsu thresholding"
+        "--threshold",
+        type=float,
+        default=0.7,
+        help="If None, threshold is automatically determined",
     )
     parser.add_argument(
-        "--same_length", action="store_true", help="If true, not use DTW"
+        "--dynamic_length", action="store_true", help="Use dynamic time warping"
     )
     args = parser.parse_args()
     main(args)

@@ -1,3 +1,4 @@
+import time
 import pickle
 from pathlib import Path
 
@@ -9,13 +10,11 @@ from spotvideo.util.video import preprocess_frame
 
 
 class FeatureExtractor:
-    def batch_extract(
-        self, video_path: list[str], key_frame_interval=11, use_cache=False
-    ):
+    def batch_extract(self, video_path: list[str], key_frame_interval=11):
         features = []
         masks = []
         for path in tqdm(video_path, desc="Extracting features"):
-            feature, mask = self.extract(path, key_frame_interval, use_cache)
+            feature, mask = self.extract(path, key_frame_interval)
             features.append(feature)
             masks.append(mask)
 
@@ -33,17 +32,17 @@ class FeatureExtractor:
         with open(key, "wb") as f:
             pickle.dump(value, f)
 
-    def extract(self, video_path: str, key_frame_interval=11, use_cache=False):
+    def caching_extract(self, video_path: str):
         try:
             cache_file = video_path + ".cache"
-            assert use_cache and self.check_cache(cache_file)
+            assert self.check_cache(cache_file)
             feature, mask = self.load_cache(cache_file)
         except AssertionError:
-            feature, mask = self._extract(video_path, key_frame_interval)
+            feature, mask = self._extract(feature)
             self.save_cache(cache_file, (feature, mask))
         return feature, mask
 
-    def _extract(self, video_path: str, key_frame_interval=11):
+    def extract(self, video_path: str, key_frame_interval=11):
         cap = cv2.VideoCapture(video_path)
         assert cap.isOpened(), f"Cannot open video file: {video_path}"
         feature = []
@@ -58,42 +57,24 @@ class FeatureExtractor:
                 continue
             current_frame = preprocess_frame(frame)
             diff_img = cv2.absdiff(prev_frame, current_frame)
-            # diff = np.mean((prev_frame - current_frame) ** 2)
-            # diff = ssim(prev_frame, current_frame)
-            # 선형 배수가 아닐수도 있다
-            # -> DTW로 해결할 수 있을 것 같다
-            # 요부분을 유사도로 사용해도 되겠다
             diff = np.mean(diff_img)
             feature.append(diff)
             prev_frame = current_frame
 
-        # normalize feature mean to 0, std to 1
         feature_np = np.array(feature)
         return self.preprocess_feature(feature_np)
 
     def preprocess_feature(
         self, feature: np.ndarray, p_value: float = 0.05, window_size: int = 15
     ):
-        # 신호 미분
-        # feature = np.gradient(feature)
-
-        # remove p_value from high
+        # Remove high-value outlier (low bound is 0) by p_value
         index = np.argsort(feature)
-        # pass_index = sorted(
-        #     index[
-        #         int(len(index) * p_value / 2) : len(feature)
-        #         - int(len(index) * p_value / 2)
-        #     ]
-        # )
         pass_index = sorted(index[: len(feature) - int(len(index) * p_value)])
         mask = np.zeros(len(feature), dtype=bool)
         mask[pass_index] = True
         passed = feature[pass_index]
-        # band_passed = feature[low_index]
-
-        # smoothing with moving average
+        # smoothing with moving average to remove noise
         smoothed = np.convolve(passed, np.ones(window_size) / window_size, mode="same")
-        # smoothed = passed
         # normalize feature mean to 0, std to 1
         normalized = (smoothed - np.mean(smoothed)) / np.std(smoothed)
 

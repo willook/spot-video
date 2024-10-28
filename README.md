@@ -64,6 +64,5 @@ spotvideo
 속도 개선  
 
 ## TODO
-- [ ] 선형 stretching, shift 변형 찾기?
-- [ ] download 기본 구조까지는 줘야함
-
+- downloads/data.zip 인자로 받을 있게 설정, 
+- download.py 이름 변경?
