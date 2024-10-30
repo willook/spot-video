@@ -13,7 +13,8 @@ python main.py
 ```
 ### Youtube 데이터셋
 ```
-python prepare_dataset.py youtube
+python prepare_dataset.py --name youtube
+python generate_data.py
 python main.py --data_dir data/youtube/ --log_dir log_dir/youtube/
 ```
 ## 성능

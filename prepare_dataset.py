@@ -63,8 +63,16 @@ def bytes_to_megabytes(bytes_size):
 
 def prepare_youtube_dataset(root_dir="data"):
     params = [
-        {"uid": "v001", "url": "https://youtu.be/xfrAN3nZuko"},
-        {"uid": "v002", "url": "https://youtu.be/1lUlmpoQsOA"},
+        {
+            "uid": "v001",
+            "title": "THE BEST NEW ANIMATION MOVIES & SERIES 2024 (Trailers)",
+            "url": "https://youtu.be/xfrAN3nZuko",
+        },
+        {
+            "uid": "v002",
+            "title": "THE BEST UPCOMING MOVIES 2024 (Trailers)",
+            "url": "https://youtu.be/1lUlmpoQsOA",
+        },
     ]
     for param in params:
         download_and_split_video(param, root_dir)
