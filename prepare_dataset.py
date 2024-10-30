@@ -1,6 +1,8 @@
 import os
 import sys
+import json
 import zipfile
+import requests
 from pathlib import Path
 
 import ffmpeg
@@ -10,7 +12,6 @@ from pytubefix import YouTube
 
 
 def prepare_markcloud_dataset(metadata, root_dir="data"):
-
     download_dir = Path(root_dir) / "downloads"
     zip_filename = download_dir / "data.zip"
     data_dir = Path(root_dir) / "markcloud"
@@ -62,18 +63,12 @@ def bytes_to_megabytes(bytes_size):
 
 
 def prepare_youtube_dataset(root_dir="data"):
-    params = [
-        {
-            "uid": "v001",
-            "title": "THE BEST NEW ANIMATION MOVIES & SERIES 2024 (Trailers)",
-            "url": "https://youtu.be/xfrAN3nZuko",
-        },
-        {
-            "uid": "v002",
-            "title": "THE BEST UPCOMING MOVIES 2024 (Trailers)",
-            "url": "https://youtu.be/1lUlmpoQsOA",
-        },
-    ]
+    gist_url = "https://gist.githubusercontent.com/willook/e005b3adf9151aa5d727282a5ecf2c66/raw/7df405ce294f0433c6d635c14a3f8a97a56cdb77/youtube_dataset.json"
+    txt_file = requests.get(gist_url).text
+    dataset = json.loads(txt_file)
+    params = dataset["videos"]
+    note = dataset["note"]
+    print("Note:", note)
     for param in params:
         download_and_split_video(param, root_dir)
 
