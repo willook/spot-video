@@ -2,20 +2,26 @@
 상금 드가자
 
 ## Quick start
+### 라이브러리 설치
 ```
 pip install -e .
-python download.py
-python generate_data.py
+```
+### Markcloud 데이터셋
+```
+python prepare_dataset.py
 python main.py
 ```
+### Youtube 데이터셋
+```
+python prepare_dataset.py youtube
+python main.py --data_dir data/youtube/ --log_dir log_dir/youtube/
+```
 ## 성능
-### markcloud 데이터 성능 - 10.09
-```
-python main.py --same_length --use_cache --threshold 0.85 --data_dir data/markcloud --log_dir log_dir/markcloud/
-```
-- Average Accuracy: 0.967  
-- Average F1: 0.979  
-### youtube 데이터 성능 - 10.09
+### Markcloud 데이터셋
+- Accuracy: 1.0
+- F1: 1.0
+- Threshold: 0.7
+### Youtube 데이터셋
 ```
 python main.py --same_length --use_cache --threshold 0.85 --data_dir data/youtube --log_dir log_dir/youtube/
 ```

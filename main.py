@@ -94,6 +94,7 @@ def evaluate(
     print(f"Threshold: {threshold}")
     print(f"Time: {elapsed:.2f}s")
     print(f"Results saved in {log_dir}")
+    print()
     return result
 
 

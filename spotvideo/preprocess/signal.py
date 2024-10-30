@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from spotvideo.util.video import preprocess_frame
+from spotvideo.preprocess.video import preprocess_frame
 
 
 class FeatureExtractor:

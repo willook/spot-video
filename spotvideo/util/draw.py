@@ -16,14 +16,29 @@ def save_similarity_histogram(
     true_mask = np.array(labels) == 1
     range = (min(similarities), max(similarities))
     # plt.plot(sorted_scores)
-    plt.hist(similarities[~true_mask], bins=50, range=range, alpha=0.6, color="r")
-    plt.hist(similarities[true_mask], bins=50, range=range, alpha=0.6, color="g")
+    plt.hist(
+        similarities[~true_mask],
+        bins=50,
+        range=range,
+        alpha=0.6,
+        color="r",
+        label="Noise videos",
+    )
+    plt.hist(
+        similarities[true_mask],
+        bins=50,
+        range=range,
+        alpha=0.6,
+        color="g",
+        label="Distorted videos",
+    )
     plt.axvline(
         threshold,
         color="b",
         linestyle="--",
         label=f"Threshold: {threshold:.2f}",
     )
+    plt.legend()
     plt.savefig(log_dir / f"{name}.png")
 
 
