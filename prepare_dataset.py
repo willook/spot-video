@@ -13,7 +13,7 @@ from pytubefix import YouTube
 
 def prepare_markcloud_dataset(root_dir="data"):
     download_dir = Path(root_dir) / "downloads"
-    zip_filename = download_dir / "data.zip"
+    zip_filename = download_dir / "A_track.zip"
     data_dir = Path(root_dir) / "markcloud"
 
     assert os.path.exists(zip_filename), f"{zip_filename} does not exist"
