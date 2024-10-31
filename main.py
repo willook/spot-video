@@ -21,7 +21,6 @@ def evaluate(
     args: argparse.Namespace,
 ):
     threshold: float = args.threshold
-    dynamic_length: bool = args.dynamic_length
     plot: bool = args.plot
     key_frame_interval: int = args.key_frame_interval
 
@@ -43,7 +42,7 @@ def evaluate(
         origin_mask,
         distorted_masks,
         threshold=threshold,
-        same_length=not dynamic_length,
+        same_length=True,
     )
     threshold = info["threshold"]
     similarities = info["similarities"]
@@ -149,9 +148,6 @@ if __name__ == "__main__":
         type=float,
         default=0.7,
         help="If None, threshold is automatically determined",
-    )
-    parser.add_argument(
-        "--dynamic_length", action="store_true", help="Use dynamic time warping"
     )
     args = parser.parse_args()
     main(args)
