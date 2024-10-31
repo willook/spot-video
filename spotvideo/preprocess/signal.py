@@ -10,6 +10,11 @@ from spotvideo.preprocess.video import preprocess_frame
 
 
 class FeatureExtractor:
+    in_memory_cache = {}
+
+    def __init__(self, caching: bool = False):
+        self.caching = caching
+
     def batch_extract(self, video_path: list[str], key_frame_interval=11):
         features = []
         masks = []
@@ -43,6 +48,8 @@ class FeatureExtractor:
         return feature, mask
 
     def extract(self, video_path: str, key_frame_interval=11):
+        if self.caching and video_path in self.in_memory_cache:
+            return self.in_memory_cache[video_path]
         cap = cv2.VideoCapture(video_path)
         assert cap.isOpened(), f"Cannot open video file: {video_path}"
         feature = []
@@ -62,7 +69,10 @@ class FeatureExtractor:
             prev_frame = current_frame
 
         feature_np = np.array(feature)
-        return self.preprocess_feature(feature_np)
+        signal = self.preprocess_feature(feature_np)
+        if self.caching:
+            self.in_memory_cache[video_path] = signal
+        return signal
 
     def preprocess_feature(
         self, feature: np.ndarray, p_value: float = 0.05, window_size: int = 15

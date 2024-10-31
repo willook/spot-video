@@ -18,6 +18,7 @@ def evaluate(
     distorted_videos: list[str],
     labels: np.ndarray,
     log_dir: Path,
+    caching: bool,
     args: argparse.Namespace,
 ):
     threshold: float = args.threshold
@@ -26,7 +27,7 @@ def evaluate(
 
     start = time.time()
 
-    extractor = FeatureExtractor()
+    extractor = FeatureExtractor(caching=caching)
     origin_feature, origin_mask = extractor.extract(
         origin_video, key_frame_interval=key_frame_interval
     )
@@ -119,6 +120,7 @@ def main(args):
     data_dir: str = args.data_dir
     dataset_name = Path(data_dir).stem
     dataset_constructor = DatasetConstructor(data_dir, dataset_name=dataset_name)
+    caching = dataset_name == "youtube"
 
     results = []
     for key in dataset_constructor.keys():
@@ -130,7 +132,9 @@ def main(args):
         assert (
             len(distorted_videos) != 0
         ), f"Category {key} does not have distorted videos"
-        result = evaluate(origin_video, distorted_videos, labels, log_dir, args)
+        result = evaluate(
+            origin_video, distorted_videos, labels, log_dir, caching, args
+        )
         results.append(result)
     summarize(results)
 
@@ -139,14 +143,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", type=str, default="data/markcloud/")
     parser.add_argument("--log_dir", type=str, default="log_dir/markcloud/")
-    parser.add_argument("--key_frame_interval", type=int, default=11)
+    parser.add_argument("--key_frame_interval", type=int, default=7)
     parser.add_argument(
         "--plot", action="store_true", help="If true, save plots (slow)"
     )
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.7,
+        default=0.75,
         help="If None, threshold is automatically determined",
     )
     args = parser.parse_args()
