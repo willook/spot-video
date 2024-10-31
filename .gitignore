@@ -1,8 +1,7 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized 
 spot_video.egg-info
 __pycache__/
 .venv
-ffmpeg.exe
 
 # windows script
 *.ps1
