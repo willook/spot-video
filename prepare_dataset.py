@@ -11,7 +11,7 @@ from tqdm import tqdm
 from pytubefix import YouTube
 
 
-def prepare_markcloud_dataset(metadata, root_dir="data"):
+def prepare_markcloud_dataset(root_dir="data"):
     download_dir = Path(root_dir) / "downloads"
     zip_filename = download_dir / "data.zip"
     data_dir = Path(root_dir) / "markcloud"
